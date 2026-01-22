@@ -31,23 +31,31 @@ class ClaudeAIService implements AIService {
   }
 
   async extractMultipleItems(rawInput: string): Promise<MultiItemExtractionResponse> {
-    const response = await fetch(`${API_ENDPOINT}/extract-multiple`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        rawInput,
-        userContext: USER_CONTEXT,
-      }),
-    });
+    try {
+      const response = await fetch(`${API_ENDPOINT}/extract-multiple`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rawInput,
+          userContext: USER_CONTEXT,
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`Multi-item extraction failed: ${response.status}`);
+      if (!response.ok) {
+        // If endpoint doesn't exist or fails, fall back to offline mode
+        console.warn(`API extraction failed (${response.status}), falling back to offline mode`);
+        return offlineAIService.extractMultipleItems(rawInput);
+      }
+
+      const data = await response.json();
+      return this.parseMultiItemResponse(data);
+    } catch (error) {
+      // Network error or endpoint doesn't exist - use offline mode
+      console.warn('API extraction error, falling back to offline mode:', error);
+      return offlineAIService.extractMultipleItems(rawInput);
     }
-
-    const data = await response.json();
-    return this.parseMultiItemResponse(data);
   }
 
   private parseResponse(data: unknown): AICategorizationResponse {
@@ -253,21 +261,65 @@ class OfflineCategorizationService implements AIService {
   }
 
   async extractMultipleItems(rawInput: string): Promise<MultiItemExtractionResponse> {
-    // Offline mode: Simple heuristic - return as single item
-    // In a real implementation, could try to split on conjunctions like "and", "also", etc.
-    const singleItem = await this.categorize(rawInput);
+    // Offline mode: Try to split on common separators
+    const separators = [
+      /\.\s+(?:and|also|plus|additionally|then)\s+/i,
+      /,\s+(?:and|also|plus|additionally|then)\s+/i,
+      /\s+(?:and|also|plus|then)\s+/i,
+    ];
+
+    let segments = [rawInput];
+
+    // Try splitting with separators
+    for (const separator of separators) {
+      const parts = rawInput.split(separator);
+      if (parts.length > 1 && parts.length <= 5) { // Max 5 items to avoid false positives
+        segments = parts;
+        break;
+      }
+    }
+
+    // If we couldn't split, return as single item
+    if (segments.length === 1) {
+      const singleItem = await this.categorize(rawInput);
+      return {
+        items: [{
+          category: singleItem.category,
+          title: singleItem.title,
+          tags: [],
+          urgency: singleItem.urgency,
+          confidence: singleItem.confidence,
+          rawText: rawInput,
+          entities: singleItem.entities,
+        }],
+        reasoning: 'Offline mode: Processed as single item. Connect to internet for better multi-item extraction.',
+      };
+    }
+
+    // Categorize each segment
+    const items = await Promise.all(
+      segments.map(async (segment) => {
+        const cleaned = segment.trim();
+        if (!cleaned) return null;
+
+        const result = await this.categorize(cleaned);
+        return {
+          category: result.category,
+          title: result.title,
+          tags: [],
+          urgency: result.urgency,
+          confidence: result.confidence * 0.7, // Lower confidence for offline splitting
+          rawText: cleaned,
+          entities: result.entities,
+        };
+      })
+    );
+
+    const validItems = items.filter((item): item is NonNullable<typeof item> => item !== null);
 
     return {
-      items: [{
-        category: singleItem.category,
-        title: singleItem.title,
-        tags: [], // No tags in offline mode
-        urgency: singleItem.urgency,
-        confidence: singleItem.confidence,
-        rawText: rawInput,
-        entities: singleItem.entities,
-      }],
-      reasoning: 'Offline mode: Processed as single item. Connect to internet for multi-item extraction.',
+      items: validItems,
+      reasoning: `Offline mode: Detected ${validItems.length} items. Connect to internet for AI-powered extraction.`,
     };
   }
 

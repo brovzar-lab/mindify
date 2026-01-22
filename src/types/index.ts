@@ -1,6 +1,6 @@
 export type Category = 'idea' | 'task' | 'reminder' | 'note';
 export type Urgency = 'high' | 'medium' | 'low' | 'none';
-export type Status = 'captured' | 'acted' | 'archived';
+export type Status = 'inbox' | 'captured' | 'acted' | 'archived';
 
 export interface EntityExtraction {
   people?: string[];

@@ -1,32 +1,26 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Send, Sparkles, Bell, BellRing } from 'lucide-react';
+import { Mic, Send, Sparkles, Bell, BellRing, Inbox as InboxIcon } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useItems } from '@/context/items-context';
 import { useHaptic } from '@/hooks/use-haptic';
-import { useOnlineStatus } from '@/hooks/use-online-status';
 import { useNotifications } from '@/hooks/use-notifications';
-import { aiService, offlineAIService } from '@/services/ai-service';
 import { notificationService } from '@/services/notification-service';
 import { CategoryBadge } from '@/components/items/category-badge';
-import { ExtractionReview } from '@/components/capture/extraction-review';
 import { ScheduleReminderSheet } from '@/components/notifications/schedule-reminder-sheet';
 import { cn } from '@/lib/cn';
-import type { Category, ExtractedItem, MultiItemExtractionResponse, MindifyItem } from '@/types';
+import type { Category, MindifyItem } from '@/types';
 
-type RecordingState = 'idle' | 'recording' | 'processing' | 'reviewing';
+type RecordingState = 'idle' | 'recording' | 'processing';
 
 export function DashboardPage() {
   const { items, addItem, updateItem } = useItems();
   const haptic = useHaptic();
-  const { isOnline } = useOnlineStatus();
-
   const [state, setState] = useState<RecordingState>('idle');
   const [transcript, setTranscript] = useState('');
   const [interimText, setInterimText] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [extractionResult, setExtractionResult] = useState<MultiItemExtractionResponse | null>(null);
   const [schedulingItem, setSchedulingItem] = useState<MindifyItem | null>(null);
   const [suggestedTime, setSuggestedTime] = useState<Date | undefined>(undefined);
   const [extractedPhrase, setExtractedPhrase] = useState<string | undefined>(undefined);
@@ -146,57 +140,39 @@ export function DashboardPage() {
     haptic.light();
 
     try {
-      const service = isOnline ? aiService : offlineAIService;
-
-      // NEW: Use multi-item extraction instead of single categorization
-      const extraction = await service.extractMultipleItems(finalTranscript.trim());
-
-      // Show extraction review modal
-      setExtractionResult(extraction);
-      setState('reviewing');
-      haptic.success();
-    } catch (err) {
-      console.error('Extraction error:', err);
-      setError('Failed to process. Please try again.');
-      setState('idle');
-      setTranscript('');
-    }
-  }, [transcript, interimText, isOnline, haptic]);
-
-  const handleSaveExtractedItems = useCallback((selectedItems: ExtractedItem[]) => {
-    // Convert extracted items to MindifyItems and save them
-    selectedItems.forEach((extracted) => {
-      const newItem = {
+      // NEW WORKFLOW: Save directly to inbox without AI processing
+      const newItem: MindifyItem = {
         id: uuidv4(),
-        rawInput: extracted.rawText,
-        category: extracted.category,
-        title: extracted.title,
-        tags: extracted.tags,
-        entities: extracted.entities || {},
-        urgency: extracted.urgency,
-        status: 'captured' as const,
+        rawInput: finalTranscript.trim(),
+        category: 'note', // Default, will be set during AI grouping
+        title: finalTranscript.trim().slice(0, 60), // First 60 chars as title
+        tags: [],
+        entities: {},
+        urgency: 'none',
+        status: 'inbox', // NEW: Mark as unprocessed
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         synced: false,
-        pendingAIProcessing: false,
+        pendingAIProcessing: true, // Will be processed in batch
       };
+
       addItem(newItem);
-    });
 
-    // Success feedback
-    haptic.success();
+      // Success feedback - "Got it!"
+      haptic.success();
+      setState('idle');
+      setTranscript('');
+      setError('Got it! 💚'); // Quick confirmation
 
-    // Reset state
-    setExtractionResult(null);
-    setState('idle');
-    setTranscript('');
-  }, [addItem, haptic]);
-
-  const handleCancelReview = useCallback(() => {
-    setExtractionResult(null);
-    setState('idle');
-    setTranscript('');
-  }, []);
+      // Clear confirmation after 2 seconds
+      setTimeout(() => setError(null), 2000);
+    } catch (err) {
+      console.error('Save error:', err);
+      setError('Failed to save. Please try again.');
+      setState('idle');
+      setTranscript('');
+    }
+  }, [transcript, interimText, addItem, haptic]);
 
   const handleMicPress = useCallback(() => {
     if (state === 'idle') {
@@ -261,14 +237,37 @@ export function DashboardPage() {
   // Category counts for quick access
   const categories: Category[] = ['idea', 'task', 'reminder', 'note'];
 
+  // Count inbox items
+  const inboxCount = items.filter(item => item.status === 'inbox').length;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header - Neon Gradient */}
-      <header className="p-4 pt-safe text-center">
+      <header className="p-4 pt-safe">
+        <div className="flex items-center justify-between mb-2">
+          <Link
+            to="/inbox"
+            className="relative"
+          >
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-surface hover:bg-surface-elevated transition-colors"
+            >
+              <InboxIcon className="w-5 h-5 text-neon-purple" />
+              <span className="text-sm font-medium text-gray-300">Inbox</span>
+              {inboxCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-neon-purple text-xs font-bold text-gray-900">
+                  {inboxCount}
+                </span>
+              )}
+            </motion.div>
+          </Link>
+        </div>
         <motion.h1
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-3xl font-bold bg-gradient-to-r from-neon-purple via-neon-blue to-neon-pink bg-clip-text text-transparent bg-[length:200%_auto] animate-[gradient-shift_8s_ease_infinite]"
+          className="text-3xl font-bold bg-gradient-to-r from-neon-purple via-neon-blue to-neon-pink bg-clip-text text-transparent bg-[length:200%_auto] animate-[gradient-shift_8s_ease_infinite] text-center"
         >
           MINDIFY
         </motion.h1>
@@ -276,17 +275,22 @@ export function DashboardPage() {
 
       {/* Main capture area */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 pb-4">
-        {/* Transcript display */}
+        {/* Status display - NO LIVE TRANSCRIPT */}
         <div className="w-full max-w-md min-h-[120px] mb-8 flex items-center justify-center">
           {state === 'recording' && (
             <div className="text-center">
-              <p className="text-xl text-gray-100 leading-relaxed">
-                {transcript}
-                <span className="text-gray-400">{interimText}</span>
-              </p>
-              {!transcript && !interimText && (
-                <p className="text-gray-500 animate-pulse">Listening...</p>
-              )}
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-3"
+              >
+                <motion.div
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="w-8 h-8 rounded-full bg-green-500"
+                />
+              </motion.div>
+              <p className="text-gray-400 animate-pulse">Listening...</p>
             </div>
           )}
           {state === 'processing' && (
@@ -315,7 +319,7 @@ export function DashboardPage() {
         {/* Giant mic button */}
         <motion.button
           onClick={handleMicPress}
-          disabled={state === 'processing' || state === 'reviewing'}
+          disabled={state === 'processing'}
           whileHover={{ scale: state === 'idle' ? 1.05 : 1 }}
           whileTap={{ scale: state === 'idle' || state === 'recording' ? 0.95 : 1 }}
           className={cn(
@@ -324,7 +328,7 @@ export function DashboardPage() {
             'focus:outline-none focus:ring-4 focus-visible:ring-category-task/30',
             state === 'idle' && 'bg-gradient-to-br from-category-task to-category-task-dark shadow-lg shadow-category-task/25',
             state === 'recording' && 'bg-gradient-to-br from-green-500 to-green-600 shadow-lg shadow-green-500/40 animate-pulse',
-            (state === 'processing' || state === 'reviewing') && 'bg-gray-700 cursor-not-allowed opacity-60'
+            state === 'processing' && 'bg-gray-700 cursor-not-allowed opacity-60'
           )}
         >
           {/* Pulsing ring when recording */}
@@ -423,17 +427,7 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {/* Extraction Review Modal */}
-      <AnimatePresence>
-        {state === 'reviewing' && extractionResult && (
-          <ExtractionReview
-            items={extractionResult.items}
-            reasoning={extractionResult.reasoning}
-            onSaveAll={handleSaveExtractedItems}
-            onCancel={handleCancelReview}
-          />
-        )}
-      </AnimatePresence>
+
 
       {/* Schedule Reminder Modal */}
       <AnimatePresence>
