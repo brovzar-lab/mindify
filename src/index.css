@@ -1,45 +1,93 @@
 @import "tailwindcss";
 
-/* Custom theme configuration for Tailwind v4 */
+/* Custom theme configuration for Tailwind v4 - Neuro Neon Theme */
 @theme {
-  /* Category colors */
-  --color-category-idea: #8B5CF6;
-  --color-category-idea-light: #A78BFA;
-  --color-category-idea-dark: #7C3AED;
+  /* === NEON ACCENT COLORS (iOS 18-inspired) === */
+  --color-neon-blue: #00F0FF;
+  --color-neon-purple: #B026FF;
+  --color-neon-pink: #FF2E97;
+  --color-neon-green: #00FF94;
+  --color-neon-yellow: #FFD600;
 
-  --color-category-task: #3B82F6;
-  --color-category-task-light: #60A5FA;
-  --color-category-task-dark: #2563EB;
+  /* === CATEGORY COLORS (Enhanced with neon variants) === */
+  /* Idea - Purple/Violet spectrum */
+  --color-category-idea: #B026FF;
+  --color-category-idea-light: #D084FF;
+  --color-category-idea-dark: #8B1FCC;
+  --color-category-idea-neon: #B026FF;
 
-  --color-category-reminder: #F59E0B;
-  --color-category-reminder-light: #FBBF24;
-  --color-category-reminder-dark: #D97706;
+  /* Task - Blue/Cyan spectrum */
+  --color-category-task: #00F0FF;
+  --color-category-task-light: #5FF5FF;
+  --color-category-task-dark: #0099CC;
+  --color-category-task-neon: #00F0FF;
 
-  --color-category-note: #6B7280;
-  --color-category-note-light: #9CA3AF;
-  --color-category-note-dark: #4B5563;
+  /* Reminder - Pink/Orange spectrum */
+  --color-category-reminder: #FF2E97;
+  --color-category-reminder-light: #FF6BB5;
+  --color-category-reminder-dark: #CC0066;
+  --color-category-reminder-neon: #FF2E97;
 
-  /* Surface colors for dark mode */
-  --color-surface: #1F2937;
-  --color-surface-elevated: #374151;
-  --color-surface-overlay: #4B5563;
+  /* Note - Green/Teal spectrum */
+  --color-category-note: #00FF94;
+  --color-category-note-light: #5AFFB8;
+  --color-category-note-dark: #00CC77;
+  --color-category-note-neon: #00FF94;
 
-  /* Background colors */
-  --color-background: #111827;
-  --color-background-secondary: #1F2937;
+  /* === SURFACE COLORS (Glassmorphism-ready) === */
+  --color-surface: rgba(31, 41, 55, 0.6);
+  --color-surface-elevated: rgba(55, 65, 81, 0.7);
+  --color-surface-overlay: rgba(75, 85, 99, 0.8);
+  --color-glass: rgba(255, 255, 255, 0.05);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
 
-  /* Spacing for touch targets */
+  /* === BACKGROUND COLORS === */
+  --color-background: #0A0A0F;
+  --color-background-secondary: #111827;
+  --color-background-elevated: #1F2937;
+
+  /* === GRADIENTS (Category-aware) === */
+  --gradient-idea: linear-gradient(135deg, #B026FF 0%, #6366F1 100%);
+  --gradient-task: linear-gradient(135deg, #00F0FF 0%, #3B82F6 100%);
+  --gradient-reminder: linear-gradient(135deg, #FF2E97 0%, #F59E0B 100%);
+  --gradient-note: linear-gradient(135deg, #00FF94 0%, #10B981 100%);
+  --gradient-hero: linear-gradient(135deg, #B026FF 0%, #00F0FF 50%, #FF2E97 100%);
+  --gradient-mesh: radial-gradient(at 0% 0%, #B026FF33 0%, transparent 50%),
+                   radial-gradient(at 100% 100%, #00F0FF33 0%, transparent 50%),
+                   radial-gradient(at 50% 50%, #FF2E9733 0%, transparent 50%);
+
+  /* === SPACING === */
   --spacing-touch: 48px;
   --spacing-capture-btn: 80px;
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
 
-  /* Font sizes */
+  /* === TYPOGRAPHY === */
   --font-size-capture: 1.5rem;
   --line-height-capture: 2rem;
 
-  /* Animations */
+  /* === GLASS EFFECTS === */
+  --glass-blur: 20px;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+
+  /* === SHADOWS (Neon glow) === */
+  --shadow-neon-blue: 0 0 20px rgba(0, 240, 255, 0.5);
+  --shadow-neon-purple: 0 0 20px rgba(176, 38, 255, 0.5);
+  --shadow-neon-pink: 0 0 20px rgba(255, 46, 151, 0.5);
+  --shadow-neon-green: 0 0 20px rgba(0, 255, 148, 0.5);
+
+  /* === ANIMATIONS === */
   --animate-pulse-ring: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   --animate-voice-wave: voice-wave 0.5s ease-in-out infinite;
+  --animate-gradient-shift: gradient-shift 8s ease infinite;
+  --animate-glow-pulse: glow-pulse 2s ease-in-out infinite;
+  --animate-spring-in: spring-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 
+  /* === KEYFRAME ANIMATIONS === */
   @keyframes pulse-ring {
     0% {
       transform: scale(0.8);
@@ -57,6 +105,58 @@
     }
     50% {
       transform: scaleY(2);
+    }
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+      opacity: 1;
+    }
+    50% {
+      box-shadow: 0 0 30px currentColor, 0 0 60px currentColor;
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes spring-in {
+    0% {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes morph-to-pill {
+    0% {
+      border-radius: 50%;
+    }
+    100% {
+      border-radius: 40px;
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
     }
   }
 }

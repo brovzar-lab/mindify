@@ -15,6 +15,7 @@ export interface MindifyItem {
   category: Category;
   subcategory?: string;
   title: string;
+  tags: string[]; // NEW: Support for multiple tags
   entities: EntityExtraction;
   urgency: Urgency;
   status: Status;
@@ -22,6 +23,12 @@ export interface MindifyItem {
   updatedAt: string;
   synced: boolean;
   pendingAIProcessing: boolean;
+  scheduledNotification?: {
+    id: number;
+    scheduledTime: string; // ISO timestamp
+    snoozeCount: number;
+    isRecurring: boolean;
+  };
 }
 
 export interface AICategorizationResponse {
@@ -34,6 +41,22 @@ export interface AICategorizationResponse {
   reasoning?: string;
 }
 
+// NEW: Types for multi-item extraction from single voice note
+export interface ExtractedItem {
+  category: Category;
+  title: string;
+  tags: string[];
+  urgency: Urgency;
+  confidence: number;
+  rawText: string; // The portion of voice note related to this item
+  entities?: EntityExtraction;
+}
+
+export interface MultiItemExtractionResponse {
+  items: ExtractedItem[];
+  reasoning: string; // Explanation of what was extracted
+}
+
 export interface UserContext {
   name: string;
   profession: string;
@@ -41,3 +64,4 @@ export interface UserContext {
   projects: string[];
   additionalContext?: string;
 }
+

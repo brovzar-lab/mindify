@@ -13,8 +13,8 @@ interface UseSpeechRecognitionReturn {
   transcript: string;
   interimTranscript: string;
   error: SpeechRecognitionError | null;
-  startListening: () => void;
-  stopListening: () => void;
+  startListening: () => Promise<void>;
+  stopListening: () => Promise<void>;
   resetTranscript: () => void;
 }
 
@@ -30,6 +30,9 @@ export function useSpeechRecognition(
   const onFinalResultRef = useRef(options.onFinalResult);
   onFinalResultRef.current = options.onFinalResult;
 
+  // Track accumulated transcript for native (since it doesn't accumulate automatically)
+  const accumulatedTranscriptRef = useRef('');
+
   useEffect(() => {
     if (!isSupported) return;
 
@@ -39,7 +42,9 @@ export function useSpeechRecognition(
       interimResults: true,
       onResult: (result) => {
         if (result.isFinal) {
-          setTranscript((prev) => prev + result.transcript);
+          const newTranscript = accumulatedTranscriptRef.current + result.transcript;
+          accumulatedTranscriptRef.current = newTranscript;
+          setTranscript(newTranscript);
           setInterimTranscript('');
           onFinalResultRef.current?.(result.transcript);
         } else {
@@ -60,16 +65,20 @@ export function useSpeechRecognition(
     });
   }, [isSupported, options.language, options.continuous]);
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     setError(null);
-    speechService.start();
+    accumulatedTranscriptRef.current = '';
+    setTranscript('');
+    setInterimTranscript('');
+    await speechService.start();
   }, []);
 
-  const stopListening = useCallback(() => {
-    speechService.stop();
+  const stopListening = useCallback(async () => {
+    await speechService.stop();
   }, []);
 
   const resetTranscript = useCallback(() => {
+    accumulatedTranscriptRef.current = '';
     setTranscript('');
     setInterimTranscript('');
   }, []);

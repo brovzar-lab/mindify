@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ItemsProvider } from '@/context/items-context';
 import { DashboardPage, BrowsePage, ItemDetailPage } from '@/pages';
+import { TestPage } from '@/pages/test';
 
 function AppContent() {
   return (
@@ -9,6 +10,7 @@ function AppContent() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/browse/:category" element={<BrowsePage />} />
         <Route path="/item/:id" element={<ItemDetailPage />} />
+        <Route path="/test" element={<TestPage />} />
       </Routes>
     </div>
   );

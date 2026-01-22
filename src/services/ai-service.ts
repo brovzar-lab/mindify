@@ -1,10 +1,11 @@
-import type { AICategorizationResponse, Category, Urgency } from '@/types';
+import type { AICategorizationResponse, Category, Urgency, MultiItemExtractionResponse } from '@/types';
 import { USER_CONTEXT } from '@/lib/constants';
 
 const API_ENDPOINT = import.meta.env.VITE_API_ENDPOINT || '/api/categorize';
 
 export interface AIService {
   categorize(rawInput: string): Promise<AICategorizationResponse>;
+  extractMultipleItems(rawInput: string): Promise<MultiItemExtractionResponse>;
   isAvailable(): Promise<boolean>;
 }
 
@@ -27,6 +28,26 @@ class ClaudeAIService implements AIService {
 
     const data = await response.json();
     return this.parseResponse(data);
+  }
+
+  async extractMultipleItems(rawInput: string): Promise<MultiItemExtractionResponse> {
+    const response = await fetch(`${API_ENDPOINT}/extract-multiple`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        rawInput,
+        userContext: USER_CONTEXT,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Multi-item extraction failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return this.parseMultiItemResponse(data);
   }
 
   private parseResponse(data: unknown): AICategorizationResponse {
@@ -62,6 +83,58 @@ class ClaudeAIService implements AIService {
       urgency: response.urgency as Urgency,
       confidence: typeof response.confidence === 'number' ? response.confidence : 0.5,
       reasoning: response.reasoning as string | undefined,
+    };
+  }
+
+  private parseMultiItemResponse(data: unknown): MultiItemExtractionResponse {
+    if (typeof data !== 'object' || data === null) {
+      throw new Error('Invalid multi-item extraction response format');
+    }
+
+    const response = data as Record<string, unknown>;
+    const validCategories = ['idea', 'task', 'reminder', 'note'];
+    const validUrgencies = ['high', 'medium', 'low', 'none'];
+
+    if (!Array.isArray(response.items)) {
+      throw new Error('Invalid items array in response');
+    }
+
+    const items = response.items.map((item: unknown) => {
+      if (typeof item !== 'object' || item === null) {
+        throw new Error('Invalid item in extraction response');
+      }
+
+      const itemData = item as Record<string, unknown>;
+
+      if (!validCategories.includes(itemData.category as string)) {
+        throw new Error('Invalid category in extracted item');
+      }
+
+      if (!validUrgencies.includes(itemData.urgency as string)) {
+        throw new Error('Invalid urgency in extracted item');
+      }
+
+      const entities = itemData.entities as Record<string, unknown> | undefined;
+
+      return {
+        category: itemData.category as Category,
+        title: String(itemData.title || '').slice(0, 60),
+        tags: Array.isArray(itemData.tags) ? itemData.tags.map(String) : [],
+        urgency: itemData.urgency as Urgency,
+        confidence: typeof itemData.confidence === 'number' ? itemData.confidence : 0.5,
+        rawText: String(itemData.rawText || ''),
+        entities: entities ? {
+          people: Array.isArray(entities.people) ? entities.people : [],
+          dates: Array.isArray(entities.dates) ? entities.dates : [],
+          projects: Array.isArray(entities.projects) ? entities.projects : [],
+          locations: Array.isArray(entities.locations) ? entities.locations : [],
+        } : undefined,
+      };
+    });
+
+    return {
+      items,
+      reasoning: String(response.reasoning || ''),
     };
   }
 
@@ -176,6 +249,25 @@ class OfflineCategorizationService implements AIService {
       },
       urgency,
       confidence: 0.3,
+    };
+  }
+
+  async extractMultipleItems(rawInput: string): Promise<MultiItemExtractionResponse> {
+    // Offline mode: Simple heuristic - return as single item
+    // In a real implementation, could try to split on conjunctions like "and", "also", etc.
+    const singleItem = await this.categorize(rawInput);
+
+    return {
+      items: [{
+        category: singleItem.category,
+        title: singleItem.title,
+        tags: [], // No tags in offline mode
+        urgency: singleItem.urgency,
+        confidence: singleItem.confidence,
+        rawText: rawInput,
+        entities: singleItem.entities,
+      }],
+      reasoning: 'Offline mode: Processed as single item. Connect to internet for multi-item extraction.',
     };
   }
 
