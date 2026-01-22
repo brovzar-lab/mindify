@@ -136,11 +136,9 @@ export function DashboardPage() {
       return;
     }
 
-    setState('processing');
-    haptic.light();
-
+    // INSTANT FEEDBACK: No processing state, save happens in background
     try {
-      // NEW WORKFLOW: Save directly to inbox without AI processing
+      // NEW WORKFLOW: Save directly to inbox without blocking UI
       const newItem: MindifyItem = {
         id: uuidv4(),
         rawInput: finalTranscript.trim(),
@@ -156,16 +154,17 @@ export function DashboardPage() {
         pendingAIProcessing: true, // Will be processed in batch
       };
 
+      // Save in background (synchronous, but instant)
       addItem(newItem);
 
-      // Success feedback - "Got it!"
+      // INSTANT feedback - "Got it!" with success haptic
       haptic.success();
-      setState('idle');
+      setState('idle'); // Back to idle immediately
       setTranscript('');
-      setError('Got it! 💚'); // Quick confirmation
+      setError('Got it! 💚'); // Quick green confirmation
 
-      // Clear confirmation after 2 seconds
-      setTimeout(() => setError(null), 2000);
+      // Clear confirmation after 1.5 seconds (faster than before)
+      setTimeout(() => setError(null), 1500);
     } catch (err) {
       console.error('Save error:', err);
       setError('Failed to save. Please try again.');
