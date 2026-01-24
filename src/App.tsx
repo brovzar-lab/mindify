@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ItemsProvider } from '@/context/items-context';
 import { DashboardPage, BrowsePage, ItemDetailPage } from '@/pages';
 import { InboxPage } from '@/pages/inbox';
+import { InboxPageEnhanced } from '@/pages/inbox-enhanced';
+import { ProjectsPage } from '@/pages/projects';
 import { TestPage } from '@/pages/test';
 
 function AppContent() {
@@ -10,6 +12,8 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/inbox" element={<InboxPage />} />
+        <Route path="/inbox/enhanced" element={<InboxPageEnhanced />} />
+        <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/browse/:category" element={<BrowsePage />} />
         <Route path="/item/:id" element={<ItemDetailPage />} />
         <Route path="/test" element={<TestPage />} />

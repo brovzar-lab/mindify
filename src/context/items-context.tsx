@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { storageService } from '@/services/storage-service';
 import type { MindifyItem, Category, Status } from '@/types';
+import type { Project } from '@/types/project';
 
 interface ItemsContextType {
   items: MindifyItem[];
+  projects: Project[];
   addItem: (item: MindifyItem) => void;
   updateItem: (id: string, updates: Partial<MindifyItem>) => void;
   deleteItem: (id: string) => void;
@@ -11,21 +13,36 @@ interface ItemsContextType {
   getItemsByCategory: (category: Category) => MindifyItem[];
   getItemsByStatus: (status: Status) => MindifyItem[];
   refreshItems: () => void;
+  // Project management
+  addProject: (project: Project) => void;
+  updateProject: (id: string, updates: Partial<Project>) => void;
+  deleteProject: (id: string) => void;
+  getProjectById: (id: string) => Project | undefined;
+  getItemsByProject: (projectId: string) => MindifyItem[];
+  refreshProjects: () => void;
 }
 
 const ItemsContext = createContext<ItemsContextType | null>(null);
 
 export function ItemsProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<MindifyItem[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
 
   const refreshItems = useCallback(() => {
     const storedItems = storageService.getItems();
     setItems(storedItems);
   }, []);
 
+  const refreshProjects = useCallback(() => {
+    const stored = localStorage.getItem('mindify_projects');
+    const storedProjects = stored ? JSON.parse(stored) : [];
+    setProjects(storedProjects);
+  }, []);
+
   useEffect(() => {
     refreshItems();
-  }, [refreshItems]);
+    refreshProjects();
+  }, [refreshItems, refreshProjects]);
 
   const addItem = useCallback((item: MindifyItem) => {
     storageService.saveItem(item);
@@ -61,10 +78,52 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
     [items]
   );
 
+  // Project management methods
+  const addProject = useCallback((project: Project) => {
+    setProjects((prev) => {
+      const updated = [...prev, project];
+      localStorage.setItem('mindify_projects', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const updateProject = useCallback((id: string, updates: Partial<Project>) => {
+    setProjects((prev) => {
+      const updated = prev.map((project) =>
+        project.id === id ? { ...project, ...updates, updatedAt: new Date().toISOString() } : project
+      );
+      localStorage.setItem('mindify_projects', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const deleteProject = useCallback((id: string) => {
+    setProjects((prev) => {
+      const updated = prev.filter((project) => project.id !== id);
+      localStorage.setItem('mindify_projects', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const getProjectById = useCallback(
+    (id: string) => projects.find((project) => project.id === id),
+    [projects]
+  );
+
+  const getItemsByProject = useCallback(
+    (projectId: string) => {
+      const project = projects.find((p) => p.id === projectId);
+      if (!project) return [];
+      return items.filter((item) => project.itemIds.includes(item.id));
+    },
+    [projects, items]
+  );
+
   return (
     <ItemsContext.Provider
       value={{
         items,
+        projects,
         addItem,
         updateItem,
         deleteItem,
@@ -72,6 +131,12 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
         getItemsByCategory,
         getItemsByStatus,
         refreshItems,
+        addProject,
+        updateProject,
+        deleteProject,
+        getProjectById,
+        getItemsByProject,
+        refreshProjects,
       }}
     >
       {children}

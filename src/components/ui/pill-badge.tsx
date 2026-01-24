@@ -8,30 +8,34 @@ interface PillBadgeProps extends Omit<HTMLMotionProps<'div'>, 'category'> {
     category?: Category;
     removable?: boolean;
     onRemove?: () => void;
-    variant?: 'filled' | 'outline' | 'glass';
+    variant?: 'filled' | 'outline' | 'glass' | 'neon';
     size?: 'sm' | 'md' | 'lg';
 }
 
-const categoryColors: Record<Category, { filled: string; outline: string; glass: string }> = {
+const categoryColors: Record<Category, { filled: string; outline: string; glass: string; neon: string }> = {
     idea: {
         filled: 'bg-category-idea text-white',
         outline: 'border-category-idea text-category-idea',
         glass: 'bg-category-idea/10 border-category-idea/30 text-category-idea',
+        neon: 'bg-gradient-to-r from-neon-purple to-neon-pink text-white border-neon-purple/50',
     },
     task: {
         filled: 'bg-category-task text-gray-900',
         outline: 'border-category-task text-category-task',
         glass: 'bg-category-task/10 border-category-task/30 text-category-task',
+        neon: 'bg-gradient-to-r from-neon-blue to-neon-green text-white border-neon-blue/50',
     },
     reminder: {
         filled: 'bg-category-reminder text-white',
         outline: 'border-category-reminder text-category-reminder',
         glass: 'bg-category-reminder/10 border-category-reminder/30 text-category-reminder',
+        neon: 'bg-gradient-to-r from-neon-pink to-yellow-400 text-white border-neon-pink/50',
     },
     note: {
         filled: 'bg-category-note text-gray-900',
         outline: 'border-category-note text-category-note',
         glass: 'bg-category-note/10 border-category-note/30 text-category-note',
+        neon: 'bg-gradient-to-r from-gray-600 to-gray-800 text-white border-gray-400/50',
     },
 };
 
