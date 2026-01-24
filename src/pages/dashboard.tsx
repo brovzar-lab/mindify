@@ -7,6 +7,7 @@ import { useItems } from '@/context/items-context';
 import { useHaptic } from '@/hooks/use-haptic';
 import { useNotifications } from '@/hooks/use-notifications';
 import { notificationService } from '@/services/notification-service';
+import { inboxProcessor } from '@/services/inbox-processor';
 import { CategoryBadge } from '@/components/items/category-badge';
 import { ScheduleReminderSheet } from '@/components/notifications/schedule-reminder-sheet';
 import { cn } from '@/lib/cn';
@@ -165,6 +166,17 @@ export function DashboardPage() {
 
       // Clear confirmation after 1.5 seconds (faster than before)
       setTimeout(() => setError(null), 1500);
+
+      // BACKGROUND: Trigger AI processing after short delay (non-blocking)
+      setTimeout(async () => {
+        console.log('[Dashboard] Triggering background AI processing...');
+        try {
+          await inboxProcessor.processPendingItems();
+          console.log('[Dashboard] Background processing complete');
+        } catch (err) {
+          console.error('[Dashboard] Background processing error:', err);
+        }
+      }, 500); // 500ms delay to let UI update first
     } catch (err) {
       console.error('Save error:', err);
       setError('Failed to save. Please try again.');
