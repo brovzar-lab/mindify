@@ -6,6 +6,7 @@ import { InboxPageEnhanced } from '@/pages/inbox-enhanced';
 import { ProjectsPage } from '@/pages/projects';
 import { ActionListPage } from '@/pages/action-list';
 import { TestPage } from '@/pages/test';
+import { VersionFooter } from '@/components/version-footer';
 
 function AppContent() {
   return (
@@ -20,6 +21,7 @@ function AppContent() {
         <Route path="/item/:id" element={<ItemDetailPage />} />
         <Route path="/test" element={<TestPage />} />
       </Routes>
+      <VersionFooter />
     </div>
   );
 }
