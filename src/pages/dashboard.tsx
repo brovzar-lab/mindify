@@ -417,6 +417,32 @@ export function DashboardPage() {
           </>
         )}
 
+        {/* Action List Quick Access */}
+        <Link to="/actions">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full mb-4 px-6 py-4 rounded-2xl bg-gradient-to-r from-neon-purple via-neon-pink to-category-task hover:shadow-lg hover:shadow-neon-purple/20 transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-white/10">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <h3 className="text-base font-semibold text-white">Action List</h3>
+                  <p className="text-xs text-gray-300">Check off your tasks</p>
+                </div>
+              </div>
+              <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </motion.button>
+        </Link>
+
         {/* Category filters */}
         <div className="flex justify-center gap-2 mt-4">
           {categories.map((category) => (
