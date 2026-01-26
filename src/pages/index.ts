@@ -1,3 +1,3 @@
-export { DashboardPage } from './dashboard';
-export { BrowsePage } from './browse';
-export { ItemDetailPage } from './item-detail';
+export { CapturePage } from './capture';
+export { ActionsPage } from './actions';
+export { InboxPage } from './inbox-new';

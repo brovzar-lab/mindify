@@ -1,2 +1,2 @@
-export { Button } from './button';
-export { Card } from './card';
+// UI components barrel export
+// Currently using Tailwind classes directly in pages

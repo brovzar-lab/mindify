@@ -34,8 +34,7 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshProjects = useCallback(() => {
-    const stored = localStorage.getItem('mindify_projects');
-    const storedProjects = stored ? JSON.parse(stored) : [];
+    const storedProjects = storageService.getProjects();
     setProjects(storedProjects);
   }, []);
 
@@ -80,29 +79,22 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
 
   // Project management methods
   const addProject = useCallback((project: Project) => {
-    setProjects((prev) => {
-      const updated = [...prev, project];
-      localStorage.setItem('mindify_projects', JSON.stringify(updated));
-      return updated;
-    });
+    storageService.saveProject(project);
+    setProjects((prev) => [...prev, project]);
   }, []);
 
   const updateProject = useCallback((id: string, updates: Partial<Project>) => {
-    setProjects((prev) => {
-      const updated = prev.map((project) =>
-        project.id === id ? { ...project, ...updates, updatedAt: new Date().toISOString() } : project
+    const updated = storageService.updateProject(id, updates);
+    if (updated) {
+      setProjects((prev) =>
+        prev.map((project) => (project.id === id ? updated : project))
       );
-      localStorage.setItem('mindify_projects', JSON.stringify(updated));
-      return updated;
-    });
+    }
   }, []);
 
   const deleteProject = useCallback((id: string) => {
-    setProjects((prev) => {
-      const updated = prev.filter((project) => project.id !== id);
-      localStorage.setItem('mindify_projects', JSON.stringify(updated));
-      return updated;
-    });
+    storageService.deleteProject(id);
+    setProjects((prev) => prev.filter((project) => project.id !== id));
   }, []);
 
   const getProjectById = useCallback(

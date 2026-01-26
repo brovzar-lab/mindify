@@ -216,6 +216,9 @@ Respond ONLY with valid JSON, no markdown or explanation.`;
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_BUILD_TIME': JSON.stringify(new Date().toISOString()),
+  },
   plugins: [
     localApiPlugin(),
     react(),
