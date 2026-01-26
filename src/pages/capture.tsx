@@ -313,13 +313,18 @@ export function CapturePage() {
     }
   }, [isNative, stopNativeRecording, stopWebRecording]);
 
-  const handleMicPress = useCallback(() => {
+  // Press and hold: start on press, stop on release
+  const handleMicPressDown = useCallback(() => {
     if (state === 'idle') {
       startRecording();
-    } else if (state === 'recording') {
+    }
+  }, [state, startRecording]);
+
+  const handleMicPressUp = useCallback(() => {
+    if (state === 'recording') {
       stopRecording();
     }
-  }, [state, startRecording, stopRecording]);
+  }, [state, stopRecording]);
 
   // Get first name from user context
   const firstName = USER_CONTEXT.name.split(' ')[0];
@@ -346,18 +351,22 @@ export function CapturePage() {
         {/* Mic button card */}
         <div className="card p-8 flex flex-col items-center">
           <button
-            onClick={handleMicPress}
+            onMouseDown={handleMicPressDown}
+            onMouseUp={handleMicPressUp}
+            onMouseLeave={handleMicPressUp}
+            onTouchStart={handleMicPressDown}
+            onTouchEnd={handleMicPressUp}
             disabled={state === 'success'}
             className={cn(
               'w-32 h-32 rounded-full flex items-center justify-center',
               'transition-all duration-200',
               'focus:outline-none',
-              'shadow-lg',
+              'shadow-lg select-none',
               state === 'idle' && 'bg-[#1A1A1A] hover:scale-105 active:scale-95',
               state === 'recording' && 'bg-[#BFFF00] scale-105',
               state === 'success' && 'bg-[#22C55E]'
             )}
-            aria-label={state === 'recording' ? 'Stop recording' : 'Start recording'}
+            aria-label={state === 'recording' ? 'Release to stop' : 'Hold to record'}
           >
             {state === 'success' ? (
               <svg className="w-14 h-14 text-white animate-fade-in" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -380,9 +389,9 @@ export function CapturePage() {
             'mt-6 text-center font-medium',
             state === 'recording' ? 'text-[#1A1A1A]' : 'text-[#9B9B9B]'
           )}>
-            {state === 'idle' && 'Tap to start'}
-            {state === 'recording' && 'Listening... tap to send'}
-            {state === 'success' && 'Got it! ✓'}
+            {state === 'idle' && 'Hold to record'}
+            {state === 'recording' && 'Recording... release to send'}
+            {state === 'success' && 'Got it!'}
           </p>
         </div>
 
