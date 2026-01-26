@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Mic, AlertCircle } from 'lucide-react';
+import { Mic, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Capacitor } from '@capacitor/core';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
@@ -39,6 +39,7 @@ export function CapturePage() {
   const [interimText, setInterimText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(getCurrentTime());
+  const [aiNotification, setAiNotification] = useState<string | null>(null);
 
   const recognitionRef = useRef<any>(null);
   const isNative = Capacitor.isNativePlatform();
@@ -155,6 +156,9 @@ export function CapturePage() {
       setTimeout(async () => {
         try {
           await inboxProcessor.processPendingItems();
+          // Show notification that AI finished organizing
+          setAiNotification('Thought organized');
+          setTimeout(() => setAiNotification(null), 3000);
         } catch (err) {
           console.error('[Capture] Background processing error:', err);
         }
@@ -283,6 +287,9 @@ export function CapturePage() {
     setTimeout(async () => {
       try {
         await inboxProcessor.processPendingItems();
+        // Show notification that AI finished organizing
+        setAiNotification('Thought organized');
+        setTimeout(() => setAiNotification(null), 3000);
       } catch (err) {
         console.error('[Capture] Background processing error:', err);
       }
@@ -379,15 +386,11 @@ export function CapturePage() {
           </p>
         </div>
 
-        {/* Live transcript - shows what you're saying */}
-        {state === 'recording' && (transcript || interimText) && (
-          <div className="card mt-6 p-4 max-w-sm w-full animate-fade-in">
-            <p className="text-[#1A1A1A] text-center">
-              {transcript}
-              {interimText && (
-                <span className="text-[#9B9B9B]"> {interimText}</span>
-              )}
-            </p>
+        {/* AI organized notification */}
+        {aiNotification && (
+          <div className="mt-6 p-3 rounded-xl bg-[#BFFF00]/20 flex items-center gap-2 max-w-sm w-full animate-fade-in">
+            <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
+            <p className="text-sm text-[#1A1A1A] font-medium">{aiNotification}</p>
           </div>
         )}
 
