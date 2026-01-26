@@ -313,18 +313,29 @@ export function CapturePage() {
     }
   }, [isNative, stopNativeRecording, stopWebRecording]);
 
+  // Track if we're currently in a press
+  const isPressing = useRef(false);
+
   // Press and hold: start on press, stop on release
-  const handleMicPressDown = useCallback(() => {
-    if (state === 'idle') {
+  const handleMicPressDown = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    e.preventDefault(); // Prevent default touch behavior
+    if (state === 'idle' && !isPressing.current) {
+      isPressing.current = true;
+      haptic.medium(); // Vibrate on press
       startRecording();
     }
-  }, [state, startRecording]);
+  }, [state, startRecording, haptic]);
 
-  const handleMicPressUp = useCallback(() => {
-    if (state === 'recording') {
-      stopRecording();
+  const handleMicPressUp = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    e.preventDefault();
+    if (isPressing.current) {
+      isPressing.current = false;
+      if (state === 'recording') {
+        haptic.success(); // Vibrate on release
+        stopRecording();
+      }
     }
-  }, [state, stopRecording]);
+  }, [state, stopRecording, haptic]);
 
   // Get first name from user context
   const firstName = USER_CONTEXT.name.split(' ')[0];
@@ -351,19 +362,21 @@ export function CapturePage() {
         {/* Mic button card */}
         <div className="card p-8 flex flex-col items-center">
           <button
+            onTouchStart={handleMicPressDown}
+            onTouchEnd={handleMicPressUp}
+            onTouchCancel={handleMicPressUp}
             onMouseDown={handleMicPressDown}
             onMouseUp={handleMicPressUp}
             onMouseLeave={handleMicPressUp}
-            onTouchStart={handleMicPressDown}
-            onTouchEnd={handleMicPressUp}
+            onContextMenu={(e) => e.preventDefault()}
             disabled={state === 'success'}
             className={cn(
               'w-32 h-32 rounded-full flex items-center justify-center',
               'transition-all duration-200',
-              'focus:outline-none',
+              'focus:outline-none touch-none',
               'shadow-lg select-none',
               state === 'idle' && 'bg-[#1A1A1A] hover:scale-105 active:scale-95',
-              state === 'recording' && 'bg-[#BFFF00] scale-105',
+              state === 'recording' && 'bg-[#BFFF00] scale-105 animate-pulse',
               state === 'success' && 'bg-[#22C55E]'
             )}
             aria-label={state === 'recording' ? 'Release to stop' : 'Hold to record'}
