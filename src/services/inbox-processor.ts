@@ -15,8 +15,10 @@ class InboxProcessor {
      * Process all pending items in the inbox
      */
     async processPendingItems(): Promise<{ processedCount: number; extractedCount: number }> {
+        console.error('[InboxProcessor] processPendingItems called');
+
         if (this.isProcessing) {
-            console.log('[InboxProcessor] Already processing, skipping');
+            console.error('[InboxProcessor] Already processing, skipping');
             return { processedCount: 0, extractedCount: 0 };
         }
 
@@ -26,18 +28,22 @@ class InboxProcessor {
 
         try {
             const allItems = storageService.getItems();
+            console.error('[InboxProcessor] Total items in storage:', allItems.length);
+
             const pendingItems = allItems.filter(
                 item => item.pendingAIProcessing && item.status === 'inbox' && !this.processingQueue.has(item.id)
             );
 
-            console.log(`[InboxProcessor] Found ${pendingItems.length} pending items to process`);
+            console.error(`[InboxProcessor] Found ${pendingItems.length} pending items to process`);
 
             for (const item of pendingItems) {
+                console.error(`[InboxProcessor] Processing item: ${item.id}`);
                 try {
                     this.processingQueue.add(item.id);
                     const extracted = await this.processItem(item);
                     extractedCount += extracted.length;
                     processedCount++;
+                    console.error(`[InboxProcessor] Item ${item.id} processed successfully`);
                 } catch (error) {
                     console.error(`[InboxProcessor] Error processing item ${item.id}:`, error);
                     // Mark as processed even if failed, to avoid retry loops
@@ -47,8 +53,11 @@ class InboxProcessor {
                 }
             }
 
-            console.log(`[InboxProcessor] Processed ${processedCount} items, extracted ${extractedCount} total items`);
+            console.error(`[InboxProcessor] Processed ${processedCount} items, extracted ${extractedCount} total items`);
             return { processedCount, extractedCount };
+        } catch (err) {
+            console.error('[InboxProcessor] Unexpected error:', err);
+            throw err;
         } finally {
             this.isProcessing = false;
         }
@@ -58,17 +67,19 @@ class InboxProcessor {
      * Process a single item and extract multiple items from it
      */
     private async processItem(originalItem: MindifyItem): Promise<MindifyItem[]> {
-        console.log(`[InboxProcessor] Processing item: "${originalItem.rawInput.slice(0, 50)}..."`);
+        console.error(`[InboxProcessor] processItem called for: "${originalItem.rawInput.slice(0, 50)}..."`);
 
         try {
             // Call AI service to extract multiple items
+            console.error('[InboxProcessor] Calling aiService.extractMultipleItems');
             const extractionResult = await aiService.extractMultipleItems(originalItem.rawInput);
 
-            console.log(`[InboxProcessor] Extracted ${extractionResult.items.length} items`);
+            console.error(`[InboxProcessor] Extracted ${extractionResult.items.length} items`);
 
             // If only 1 item extracted, just update the original
             if (extractionResult.items.length === 1) {
                 const extracted = extractionResult.items[0];
+                console.error('[InboxProcessor] Updating single item with:', extracted);
                 storageService.updateItem(originalItem.id, {
                     category: extracted.category,
                     title: extracted.title,
@@ -78,6 +89,7 @@ class InboxProcessor {
                     pendingAIProcessing: false,
                     synced: false,
                 });
+                console.error('[InboxProcessor] Single item updated successfully');
                 return [originalItem];
             }
 

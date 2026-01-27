@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Inbox as InboxIcon, Loader2 } from 'lucide-react';
 import { useItems } from '@/context/items-context';
@@ -12,17 +12,26 @@ import type { MindifyItem } from '@/types';
 
 export function InboxPage() {
   const navigate = useNavigate();
-  const { items, updateItem } = useItems();
+  const { items, updateItem, refreshItems } = useItems();
   const haptic = useHaptic();
+
+  // Poll for updates while there are processing items
+  const processingItems = items.filter(
+    item => item.status === 'inbox' && item.pendingAIProcessing
+  );
+
+  useEffect(() => {
+    if (processingItems.length > 0) {
+      const interval = setInterval(() => {
+        refreshItems();
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [processingItems.length, refreshItems]);
 
   // Get inbox items that are ready for review (AI processing complete)
   const inboxItems = items.filter(
     item => item.status === 'inbox' && !item.pendingAIProcessing
-  );
-
-  // Get items still being processed by AI
-  const processingItems = items.filter(
-    item => item.status === 'inbox' && item.pendingAIProcessing
   );
 
   // Approve single item - move to captured status

@@ -1,7 +1,8 @@
 import type { AICategorizationResponse, Category, Urgency, MultiItemExtractionResponse } from '@/types';
 import { USER_CONTEXT } from '@/lib/constants';
 
-const API_ENDPOINT = import.meta.env.VITE_API_ENDPOINT || '/api/categorize';
+const ANTHROPIC_API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY;
+const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 
 export interface AIService {
   categorize(rawInput: string): Promise<AICategorizationResponse>;
@@ -9,94 +10,136 @@ export interface AIService {
   isAvailable(): Promise<boolean>;
 }
 
-class ClaudeAIService implements AIService {
-  async categorize(rawInput: string): Promise<AICategorizationResponse> {
-    const response = await fetch(API_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        rawInput,
-        userContext: USER_CONTEXT,
-      }),
-    });
+/**
+ * Claude-powered AI service for intelligent thought organization
+ */
+class ClaudeDirectService implements AIService {
+  private apiKey: string;
 
-    if (!response.ok) {
-      throw new Error(`AI categorization failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return this.parseResponse(data);
+  constructor() {
+    this.apiKey = ANTHROPIC_API_KEY || '';
   }
 
   async extractMultipleItems(rawInput: string): Promise<MultiItemExtractionResponse> {
+    if (!this.apiKey) {
+      console.warn('[AIService] No API key configured, using offline mode');
+      return offlineAIService.extractMultipleItems(rawInput);
+    }
+
     try {
-      const response = await fetch(`${API_ENDPOINT}/extract-multiple`, {
+      console.log('[AIService] Calling Claude API for extraction');
+
+      const systemPrompt = `You are an intelligent personal assistant that helps organize thoughts, ideas, tasks, and reminders.
+
+User Context:
+- Name: ${USER_CONTEXT.name}
+- Known Projects: ${USER_CONTEXT.projects.join(', ')}
+- Categories: idea, task, reminder, note
+- Urgency levels: high, medium, low, none
+
+Your job is to analyze a voice transcription and extract distinct actionable items from it. A single recording might contain multiple separate thoughts, tasks, or ideas that should be split into individual items.
+
+IMPORTANT GUIDELINES:
+1. Look for natural separations - "and", "also", "another thing", topic changes, etc.
+2. Don't create items from filler words like "um", "uh", "and", "so"
+3. Each item should be a complete, meaningful thought
+4. Assign appropriate categories based on content:
+   - "task" = something to do (action item, to-do)
+   - "reminder" = something to remember at a specific time/event
+   - "idea" = a creative thought, concept, or possibility
+   - "note" = general information, observation, or reference
+5. Extract entities like people names, dates, projects mentioned
+6. Determine urgency based on time-sensitivity and importance
+
+Respond with valid JSON only, no markdown or explanation.`;
+
+      const userPrompt = `Extract and organize the distinct items from this voice transcription:
+
+"${rawInput}"
+
+Respond with this exact JSON structure:
+{
+  "items": [
+    {
+      "category": "task|reminder|idea|note",
+      "title": "concise title (max 60 chars)",
+      "rawText": "the original text for this item",
+      "tags": ["relevant", "tags"],
+      "urgency": "high|medium|low|none",
+      "confidence": 0.0-1.0,
+      "entities": {
+        "people": ["names mentioned"],
+        "dates": ["dates or times mentioned"],
+        "projects": ["project names"],
+        "locations": ["places mentioned"]
+      }
+    }
+  ],
+  "reasoning": "brief explanation of how you split and categorized"
+}`;
+
+      const response = await fetch(CLAUDE_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-api-key': this.apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          rawInput,
-          userContext: USER_CONTEXT,
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2048,
+          system: systemPrompt,
+          messages: [
+            { role: 'user', content: userPrompt }
+          ],
         }),
       });
 
       if (!response.ok) {
-        // If endpoint doesn't exist or fails, fall back to offline mode
-        console.warn(`API extraction failed (${response.status}), falling back to offline mode`);
-        return offlineAIService.extractMultipleItems(rawInput);
+        const errorText = await response.text();
+        console.error('[AIService] Claude API error:', response.status, errorText);
+        throw new Error(`Claude API error: ${response.status}`);
       }
 
       const data = await response.json();
-      return this.parseMultiItemResponse(data);
+      const content = data.content?.[0]?.text;
+
+      if (!content) {
+        throw new Error('No content in Claude response');
+      }
+
+      // Parse the JSON response
+      const parsed = JSON.parse(content);
+      return this.validateExtractionResponse(parsed);
+
     } catch (error) {
-      // Network error or endpoint doesn't exist - use offline mode
-      console.warn('API extraction error, falling back to offline mode:', error);
+      console.error('[AIService] Claude extraction failed:', error);
+      console.warn('[AIService] Falling back to offline mode');
       return offlineAIService.extractMultipleItems(rawInput);
     }
   }
 
-  private parseResponse(data: unknown): AICategorizationResponse {
-    if (typeof data !== 'object' || data === null) {
-      throw new Error('Invalid AI response format');
+  async categorize(rawInput: string): Promise<AICategorizationResponse> {
+    // Use extractMultipleItems and return the first item
+    const result = await this.extractMultipleItems(rawInput);
+    if (result.items.length === 0) {
+      throw new Error('No items extracted');
     }
-
-    const response = data as Record<string, unknown>;
-
-    const validCategories = ['idea', 'task', 'reminder', 'note'];
-    const validUrgencies = ['high', 'medium', 'low', 'none'];
-
-    if (!validCategories.includes(response.category as string)) {
-      throw new Error('Invalid category in AI response');
-    }
-
-    if (!validUrgencies.includes(response.urgency as string)) {
-      throw new Error('Invalid urgency in AI response');
-    }
-
-    const entities = response.entities as Record<string, unknown> | undefined;
-
+    const item = result.items[0];
     return {
-      category: response.category as Category,
-      subcategory: response.subcategory as string | undefined,
-      title: String(response.title || '').slice(0, 60),
-      entities: {
-        people: Array.isArray(entities?.people) ? entities.people : [],
-        dates: Array.isArray(entities?.dates) ? entities.dates : [],
-        projects: Array.isArray(entities?.projects) ? entities.projects : [],
-        locations: Array.isArray(entities?.locations) ? entities.locations : [],
-      },
-      urgency: response.urgency as Urgency,
-      confidence: typeof response.confidence === 'number' ? response.confidence : 0.5,
-      reasoning: response.reasoning as string | undefined,
+      category: item.category,
+      title: item.title,
+      entities: item.entities || { people: [], dates: [], projects: [], locations: [] },
+      urgency: item.urgency,
+      confidence: item.confidence,
+      reasoning: result.reasoning,
     };
   }
 
-  private parseMultiItemResponse(data: unknown): MultiItemExtractionResponse {
+  private validateExtractionResponse(data: unknown): MultiItemExtractionResponse {
     if (typeof data !== 'object' || data === null) {
-      throw new Error('Invalid multi-item extraction response format');
+      throw new Error('Invalid extraction response format');
     }
 
     const response = data as Record<string, unknown>;
@@ -114,22 +157,26 @@ class ClaudeAIService implements AIService {
 
       const itemData = item as Record<string, unknown>;
 
-      if (!validCategories.includes(itemData.category as string)) {
-        throw new Error('Invalid category in extracted item');
+      // Default to 'note' if category is invalid
+      let category: Category = 'note';
+      if (validCategories.includes(itemData.category as string)) {
+        category = itemData.category as Category;
       }
 
-      if (!validUrgencies.includes(itemData.urgency as string)) {
-        throw new Error('Invalid urgency in extracted item');
+      // Default to 'none' if urgency is invalid
+      let urgency: Urgency = 'none';
+      if (validUrgencies.includes(itemData.urgency as string)) {
+        urgency = itemData.urgency as Urgency;
       }
 
       const entities = itemData.entities as Record<string, unknown> | undefined;
 
       return {
-        category: itemData.category as Category,
+        category,
         title: String(itemData.title || '').slice(0, 60),
         tags: Array.isArray(itemData.tags) ? itemData.tags.map(String) : [],
-        urgency: itemData.urgency as Urgency,
-        confidence: typeof itemData.confidence === 'number' ? itemData.confidence : 0.5,
+        urgency,
+        confidence: typeof itemData.confidence === 'number' ? itemData.confidence : 0.8,
         rawText: String(itemData.rawText || ''),
         entities: entities ? {
           people: Array.isArray(entities.people) ? entities.people : [],
@@ -147,17 +194,13 @@ class ClaudeAIService implements AIService {
   }
 
   async isAvailable(): Promise<boolean> {
-    try {
-      const response = await fetch(`${API_ENDPOINT}/health`, {
-        method: 'GET',
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
+    return !!this.apiKey;
   }
 }
 
+/**
+ * Offline fallback service using keyword matching
+ */
 class OfflineCategorizationService implements AIService {
   async categorize(rawInput: string): Promise<AICategorizationResponse> {
     const lowerInput = rawInput.toLowerCase();
@@ -273,7 +316,7 @@ class OfflineCategorizationService implements AIService {
     // Try splitting with separators
     for (const separator of separators) {
       const parts = rawInput.split(separator);
-      if (parts.length > 1 && parts.length <= 5) { // Max 5 items to avoid false positives
+      if (parts.length > 1 && parts.length <= 5) {
         segments = parts;
         break;
       }
@@ -292,7 +335,7 @@ class OfflineCategorizationService implements AIService {
           rawText: rawInput,
           entities: singleItem.entities,
         }],
-        reasoning: 'Offline mode: Processed as single item. Connect to internet for better multi-item extraction.',
+        reasoning: 'Offline mode: Processed as single item. Add API key for AI-powered extraction.',
       };
     }
 
@@ -308,7 +351,7 @@ class OfflineCategorizationService implements AIService {
           title: result.title,
           tags: [],
           urgency: result.urgency,
-          confidence: result.confidence * 0.7, // Lower confidence for offline splitting
+          confidence: result.confidence * 0.7,
           rawText: cleaned,
           entities: result.entities,
         };
@@ -319,7 +362,7 @@ class OfflineCategorizationService implements AIService {
 
     return {
       items: validItems,
-      reasoning: `Offline mode: Detected ${validItems.length} items. Connect to internet for AI-powered extraction.`,
+      reasoning: `Offline mode: Detected ${validItems.length} items. Add API key for AI-powered extraction.`,
     };
   }
 
@@ -329,8 +372,8 @@ class OfflineCategorizationService implements AIService {
 }
 
 export function createAIService(online: boolean): AIService {
-  return online ? new ClaudeAIService() : new OfflineCategorizationService();
+  return online ? new ClaudeDirectService() : new OfflineCategorizationService();
 }
 
-export const aiService = new ClaudeAIService();
+export const aiService = new ClaudeDirectService();
 export const offlineAIService = new OfflineCategorizationService();

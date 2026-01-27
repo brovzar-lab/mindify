@@ -77,7 +77,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 
 function AppContent() {
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary">
+    <div className="min-h-screen" style={{ backgroundColor: '#F5F0E8', color: '#1A1A1A' }}>
       <Routes>
         <Route path="/" element={<CapturePage />} />
         <Route path="/actions" element={<ActionsPage />} />
