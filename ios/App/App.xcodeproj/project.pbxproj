@@ -17,6 +17,30 @@
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		571293922F2A5FB600037B38 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5712938A2F2A5FB600037B38 /* Mindify Test.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 5712935E2F2A5FB500037B38;
+			remoteInfo = "Mindify Test";
+		};
+		571293942F2A5FB600037B38 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5712938A2F2A5FB600037B38 /* Mindify Test.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 5712936D2F2A5FB600037B38;
+			remoteInfo = "Mindify TestTests";
+		};
+		571293962F2A5FB600037B38 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5712938A2F2A5FB600037B38 /* Mindify Test.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 571293772F2A5FB600037B38;
+			remoteInfo = "Mindify TestUITests";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
@@ -27,6 +51,8 @@
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
+		571293542F2A5F3B00037B38 /* Untitled.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Untitled.swift; sourceTree = "<group>"; };
+		5712938A2F2A5FB600037B38 /* Mindify Test.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = "Mindify Test.xcodeproj"; path = "/Users/Vertigo/CODE/MINDIFY/Mindify Test/Mindify Test.xcodeproj"; sourceTree = "<absolute>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -45,6 +71,8 @@
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
+				5712938A2F2A5FB600037B38 /* Mindify Test.xcodeproj */,
+				571293542F2A5F3B00037B38 /* Untitled.swift */,
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
@@ -72,6 +100,16 @@
 				50B271D01FEDC1A000F3C39B /* public */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		5712938D2F2A5FB600037B38 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				571293932F2A5FB600037B38 /* Mindify Test.app */,
+				571293952F2A5FB600037B38 /* Mindify TestTests.xctest */,
+				571293972F2A5FB600037B38 /* Mindify TestUITests.xctest */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -127,12 +165,42 @@
 			);
 			productRefGroup = 504EC3051FED79650016851F /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 5712938D2F2A5FB600037B38 /* Products */;
+					ProjectRef = 5712938A2F2A5FB600037B38 /* Mindify Test.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		571293932F2A5FB600037B38 /* Mindify Test.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = "Mindify Test.app";
+			remoteRef = 571293922F2A5FB600037B38 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		571293952F2A5FB600037B38 /* Mindify TestTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = "Mindify TestTests.xctest";
+			remoteRef = 571293942F2A5FB600037B38 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		571293972F2A5FB600037B38 /* Mindify TestUITests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = "Mindify TestUITests.xctest";
+			remoteRef = 571293962F2A5FB600037B38 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		504EC3021FED79650016851F /* Resources */ = {

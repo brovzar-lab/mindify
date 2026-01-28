@@ -10,7 +10,7 @@ export const USER_CONTEXT: UserContext = {
 
 // Category colors for warm light theme
 export const CATEGORY_COLORS: Record<Category, { text: string; bg: string; border: string }> = {
-  idea: { text: 'text-[#A855F7]', bg: 'bg-[#A855F7]/10', border: 'border-[#A855F7]' },
+  idea: { text: 'text-[#14B8A6]', bg: 'bg-[#14B8A6]/10', border: 'border-[#14B8A6]' },
   task: { text: 'text-[#3B82F6]', bg: 'bg-[#3B82F6]/10', border: 'border-[#3B82F6]' },
   reminder: { text: 'text-[#F97316]', bg: 'bg-[#F97316]/10', border: 'border-[#F97316]' },
   note: { text: 'text-[#22C55E]', bg: 'bg-[#22C55E]/10', border: 'border-[#22C55E]' },
